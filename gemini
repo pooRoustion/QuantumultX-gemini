@@ -1,0 +1,82 @@
+[general]
+# 节点延迟测试地址，建议使用 Google 204
+server_check_url = www.gstatic.com
+# 网络连通性检测
+network_check_url = captive.apple.com
+# 节点延迟测试超时 (ms)
+server_check_timeout = 2000
+# DNS 设置：通过分流防止国内域名被污染，同时保证海外域名解析准确
+dns_server = system, 119.29.29.29, 223.5.5.5, 8.8.8.8, 1.1.1.1
+# 排除 IPv6 以提升部分网络环境下的加载速度
+dns_ipv6 = false
+# 自动重连及延迟测试间隔
+dns_hijack = 119.29.29.29:53, 223.5.5.5:53
+# 绕过局域网及本地地址
+skip_proxy = 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, localhost, *.local, captive.apple.com
+# TUN 模式排除 IP 段
+tun_excluded_routes = 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12
+# 资源解析器：用于转换订阅链接
+resource_parser_url = raw.githubusercontent.com
+
+[server_remote]
+# ！！！请将下方“你的订阅链接”替换为机场提供的实际地址！！！
+你的订阅链接, tag=我的机场, update-interval=86400, opt-parser=true, enabled=true
+
+[policy]
+# 1. 自动选择：基于延迟自动切换，建议正则匹配你想包含的地区
+url-latency-benchmark, 🌍 自动选择, server-tag-regex=香港|日本|美国|台湾, check-interval=600, tolerance=50, img-url=raw.githubusercontent.com
+
+# 2. 手动切换总开关
+select, 🚀 手动切换, img-url=raw.githubusercontent.com, 🌍 自动选择, 🇭🇰 香港, 🇯🇵 日本, 🇺🇸 美国, 🇹🇼 台湾, direct
+
+# 3. 地区分类（使用正则匹配订阅中的节点名称，更具通用性）
+static, 🇭🇰 香港, server-tag-regex=香港|HK|HongKong, img-url=raw.githubusercontent.com
+static, 🇯🇵 日本, server-tag-regex=日本|JP|Japan, img-url=raw.githubusercontent.com
+static, 🇺🇸 美国, server-tag-regex=美国|US|United States, img-url=raw.githubusercontent.com
+static, 🇹🇼 台湾, server-tag-regex=台湾|TW|Taiwan, img-url=raw.githubusercontent.com
+
+# 4. AI 服务专用（已排除香港节点，仅限美/日/台等可用区域）
+static, AI服务, img-url=raw.githubusercontent.com, 🇺🇸 美国, 🇯🇵 日本, 🇹🇼 台湾, select
+
+# 5. 基础操作策略
+static, 🐠 直连, direct, img-url=raw.githubusercontent.com
+static, 🐳 拒绝, reject, img-url=raw.githubusercontent.com
+
+[filter_remote]
+# OpenAI / ChatGPT
+raw.githubusercontent.com, tag=OpenAI, force-policy=AI服务, update-interval=86400, enabled=true
+# Anthropic / Claude
+raw.githubusercontent.com, tag=Claude, force-policy=AI服务, update-interval=86400, enabled=true
+# Google Gemini
+raw.githubusercontent.com, tag=Gemini, force-policy=AI服务, update-interval=86400, enabled=true
+# Microsoft Copilot
+raw.githubusercontent.com, tag=Copilot, force-policy=AI服务, update-interval=86400, enabled=true
+# YouTube (建议走手动切换或延迟最低的节点)
+raw.githubusercontent.com, tag=YouTube, force-policy=🚀 手动切换, update-interval=86400, enabled=true
+# 广告拦截
+raw.githubusercontent.com, tag=广告拦截, force-policy=🐳 拒绝, update-interval=86400, enabled=true
+# 中国大陆分流（直连）
+raw.githubusercontent.com, tag=国内直连, force-policy=🐠 直连, update-interval=86400, enabled=true
+# 国外通用规则（兜底代理）
+raw.githubusercontent.com, tag=国外代理, force-policy=🚀 手动切换, update-interval=86400, enabled=true
+
+[filter_local]
+# 自定义补漏规则
+HOST-SUFFIX, x.ai, AI服务
+HOST-SUFFIX, grok.com, AI服务
+HOST-SUFFIX, copilot.microsoft.com, AI服务
+# 防止 DNS 泄露
+IP-CIDR, 1.1.1.1/32, 🚀 手动切换
+IP-CIDR, 8.8.8.8/32, 🚀 手动切换
+# 地理位置修正
+GEOIP,CN, 🐠 直连
+FINAL, 🚀 手动切换
+
+[rewrite_remote]
+# 常用重写脚本（去广告等）
+raw.githubusercontent.com, tag=基础去广告, enabled=true
+raw.githubusercontent.com, tag=OpenAI优化, enabled=true
+
+[mitm]
+# 仅保留核心需要解密的域名，减少 CPU 占用和兼容性问题
+hostname = *.openai.com, *.anthropic.com, *.claude.ai, *.gemini.google.com, *.googleapis.com, *.x.ai, *.grok.com, *.microsoft.com
