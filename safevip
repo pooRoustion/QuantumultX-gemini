@@ -1,0 +1,61 @@
+[general]                               # 通用设置（极端安全）
+# 连通性检测（使用 HTTPS）
+server_check_url = https://www.gstatic.com/generate_204
+network_check_url = https://captive.apple.com/hotspot-detect.html
+server_check_timeout = 5000             # 超时略放宽，避免误判
+
+# 使用受信任的公共解析器（不使用 system，避免 DNS 泄露）
+# 如需更严格，请在设备上配置 DoH/DoT（推荐）
+dns_server = 1.1.1.1, 9.9.9.9
+
+# 本地直连网段（保留内部网络直连）
+skip_proxy = 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, localhost, *.local
+tun_excluded_routes = 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12
+
+# 远程解析/脚本：默认禁用或注释。若必须使用，锁定到具体 commit SHA 并人工审计。
+# resource_parser_url = https://raw.githubusercontent.com/<owner>/<repo>/<commit-sha>/Scripts/resource-parser.js
+
+[server_remote]                         # 远程节点订阅（示例占位，默认禁用）
+# 注意：切勿在公开仓库放置真实订阅链接（含 token/凭证）
+你的订阅链接, tag=你的机场名, update-interval=86400, enabled=false
+
+[policy]                                # 策略组（保守/极简）
+static, 🐠 直连, img-url=, direct
+static, 🐳 拒绝, img-url=, reject
+select, 🚫 手动审批, img-url=, 🐠 直连, 🐳 拒绝
+
+# 若必须访问外部 AI 服务，请在受控设备上手动添加并限制到可信节点；
+# 不要把未知/默认流量指向非受控代理节点。
+
+[filter_remote]                         # 远程分流规则（全部默认禁用）
+# 为防供应链被利用，默认不启用任何远程规则。若确需启用，使用 commit SHA 并人工审计后才设置 enabled=true
+# 示例（禁用）：
+# https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/<commit-sha>/rule/QuantumultX/OpenAI/OpenAI.list, tag=ChatGPT-OpenAI, force-policy=AI服务, update-interval=86400, enabled=false
+
+[filter_local]                          # 本地分流规则（仅非常精确的白名单）
+# 仅为明确需要的域名设置精确后缀；避免 HOST-KEYWORD、广泛通配符或模糊匹配
+HOST-SUFFIX, grok.x.ai, 🐠 直连
+HOST-SUFFIX, api.grok.x.ai, 🐠 直连
+HOST-SUFFIX, x.ai, 🐠 直连
+HOST-SUFFIX, copilot.microsoft.com, 🐠 直连
+
+# 所有中国大陆 IP 强制本地直连（根据需求可调整）
+GEOIP,CN, 🐠 直连
+
+# 极端安全：对未匹配流量一律拒绝而非走代理或自动兜底
+FINAL, 🐳 拒绝
+
+[rewrite_remote]                        # 远程重写（全部禁用）
+# 为避免任意重写注入，默认禁用所有远程 rewrite。仅在完成审计后手动启用并锁定到 commit SHA。
+# https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/<commit-sha>/rule/QuantumultX/Advertising/Advertising.conf, tag=去广告重写, enabled=false
+
+[mitm]                                  # MITM（TLS 解密）——默认完全禁用（极端安全）
+# 强烈提醒：
+# - 默认不要启用 MITM。仅在受控测试设备、短期调试并只针对单个明确域名时才启用。
+# - 若启用，请锁定到具体域名（不要使用 *.google.com 等泛域名），并确保根证书及私钥绝对安全。
+# 示例（默认注释/空）：
+# hostname = grok.x.ai, api.grok.x.ai
+
+# 证书与密钥管理提醒（非配置项）：
+# - 切勿在生产/个人主力设备上安装 MITM 根证书，除非你完全理解并能保护私钥；
+# - 若证书或配置泄露，应立即撤销并更换所有凭证。
